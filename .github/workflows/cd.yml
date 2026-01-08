@@ -9,6 +9,19 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: us-east-1
+      
+      SQS_QUEUE_NAME: fcg-payments-queue
+      
+      LAMBDA_HANDLER: PaymentsProcessor.Function::PaymentsProcessor.Function.Function::FunctionHandler
+      
+      ECS_CLUSTER: fcg-cluster
+      ECS_SERVICE: fcg-payments-task-service-rfv89au5
+      
+      ECS_ENV_QUEUE_KEY: Sqs__QueueUrl
+      ECS_ENV_REGION_KEY: AWS__Region
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -36,7 +49,7 @@ jobs:
       - name: Build and push Docker images
         uses: docker/build-push-action@v6.18.0
         with:
-          tags: '${{ secrets.DOCKER_USERNAME }}/tech-challenge-users:latest'
+          tags: '${{ secrets.DOCKER_USERNAME }}/tech-challenge-payments:latest'
           context: .
           push: true
 
@@ -48,10 +61,209 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
-      - name: Update ECS service with new image
+      - name: Install tools (Lambda + jq)
+        run: |
+          dotnet tool install -g Amazon.Lambda.Tools
+          echo "/home/runner/.dotnet/tools" >> $GITHUB_PATH
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Ensure SQS Queue
+        id: sqs
+        run: |
+          set -euo pipefail
+
+          QUEUE_URL=$(aws sqs get-queue-url --queue-name "$SQS_QUEUE_NAME" --query 'QueueUrl' --output text 2>/dev/null || true)
+          if [ -z "${QUEUE_URL:-}" ] || [ "${QUEUE_URL:-}" = "None" ]; then
+            echo "Creating queue: $SQS_QUEUE_NAME"
+            QUEUE_URL=$(aws sqs create-queue \
+              --queue-name "$SQS_QUEUE_NAME" \
+              --attributes "ReceiveMessageWaitTimeSeconds=20,VisibilityTimeout=300" \
+              --query 'QueueUrl' --output text)
+          else
+            echo "Queue exists: $QUEUE_URL"
+            aws sqs set-queue-attributes \
+              --queue-url "$QUEUE_URL" \
+              --attributes "ReceiveMessageWaitTimeSeconds=20,VisibilityTimeout=300" \
+              >/dev/null
+          fi
+
+          QUEUE_ARN=$(aws sqs get-queue-attributes \
+            --queue-url "$QUEUE_URL" \
+            --attribute-names QueueArn \
+            --query 'Attributes.QueueArn' \
+            --output text)
+            
+          ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+          POLICY=$(jq -nc --arg qarn "$QUEUE_ARN" --arg acc "$ACCOUNT_ID" '{
+            Version:"2012-10-17",
+            Statement:[
+              {
+                Sid:"AllowAccountSendMessage",
+                Effect:"Allow",
+                Principal:"*",
+                Action:["sqs:SendMessage"],
+                Resource:$qarn,
+                Condition:{ StringEquals:{ "aws:PrincipalAccount": $acc } }
+              }
+            ]
+          }')
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
+
+          POLICY=$(jq -nc --arg qarn "$QUEUE_ARN" --arg acc "$ACCOUNT_ID" '{
+            Version:"2012-10-17",
+            Statement:[
+              {
+                Sid:"AllowAccountSendMessage",
+                Effect:"Allow",
+                Principal:"*",
+                Action:["sqs:SendMessage"],
+                Resource:$qarn,
+                Condition:{ StringEquals:{ "aws:PrincipalAccount": $acc } }
+              }
+            ]
+          }')
+          
+          ATTR_FILE=$(mktemp)
+          jq -nc --arg policy "$POLICY" '{Policy: $policy}' > "$ATTR_FILE"
+          
+          aws sqs set-queue-attributes \
+            --queue-url "$QUEUE_URL" \
+            --attributes "file://$ATTR_FILE" \
+            >/dev/null
+
+          echo "QUEUE_URL=$QUEUE_URL" >> $GITHUB_OUTPUT
+          echo "QUEUE_ARN=$QUEUE_ARN" >> $GITHUB_OUTPUT
+
+      - name: Package Lambda (.NET)
+        run: |
+          set -euo pipefail
+          cd serverless/PaymentsProcessor.Function/src/PaymentsProcessor.Function
+          dotnet lambda package -c Release -o "$GITHUB_WORKSPACE/payments-processor.zip"
+          ls -lah "$GITHUB_WORKSPACE/payments-processor.zip"
+
+      - name: Create or Update Lambda
+        env:
+          LAMBDA_FUNCTION_NAME: fcg-payments-processor 
+          LAMBDA_ROLE_ARN: arn:aws:iam::558329071611:role/LabRole
+        run: |
+          set -euo pipefail
+          ZIP="$GITHUB_WORKSPACE/payments-processor.zip"
+
+          if aws lambda get-function --function-name "$LAMBDA_FUNCTION_NAME" >/dev/null 2>&1; then
+            echo "Updating Lambda code: $LAMBDA_FUNCTION_NAME"
+            aws lambda update-function-code \
+              --function-name "$LAMBDA_FUNCTION_NAME" \
+              --zip-file "fileb://$ZIP" \
+              >/dev/null
+
+            aws lambda wait function-updated --function-name "$LAMBDA_FUNCTION_NAME"
+
+            echo "Updating Lambda config"
+            aws lambda update-function-configuration \
+              --function-name "$LAMBDA_FUNCTION_NAME" \
+              --handler "$LAMBDA_HANDLER" \
+              --timeout 30 \
+              --memory-size 512 \
+              >/dev/null
+
+            aws lambda wait function-updated --function-name "$LAMBDA_FUNCTION_NAME"
+          else
+            echo "Creating Lambda: $LAMBDA_FUNCTION_NAME"
+            aws lambda create-function \
+              --function-name "$LAMBDA_FUNCTION_NAME" \
+              --runtime dotnet8 \
+              --handler "$LAMBDA_HANDLER" \
+              --role "$LAMBDA_ROLE_ARN" \
+              --zip-file "fileb://$ZIP" \
+              --timeout 30 \
+              --memory-size 512 \
+              --publish \
+              >/dev/null
+          fi
+
+      - name: Ensure SQS -> Lambda trigger (Event Source Mapping)
+        env:
+          LAMBDA_FUNCTION_NAME: fcg-payments-processor 
+          QUEUE_ARN: ${{ steps.sqs.outputs.QUEUE_ARN }}
+        run: |
+          set -euo pipefail
+
+          UUID=$(aws lambda list-event-source-mappings \
+            --function-name "$LAMBDA_FUNCTION_NAME" \
+            --event-source-arn "$QUEUE_ARN" \
+            --query 'EventSourceMappings[0].UUID' \
+            --output text)
+
+          if [ -z "${UUID:-}" ] || [ "$UUID" = "None" ]; then
+            echo "Creating event source mapping SQS -> Lambda"
+            aws lambda create-event-source-mapping \
+              --function-name "$LAMBDA_FUNCTION_NAME" \
+              --event-source-arn "$QUEUE_ARN" \
+              --batch-size 10 \
+              --enabled \
+              >/dev/null
+          else
+            echo "Event source mapping already exists: $UUID"
+          fi
+
+      - name: Update ECS task definition env vars (QueueUrl + Region) and deploy
+        env:
+          QUEUE_URL: ${{ steps.sqs.outputs.QUEUE_URL }}
+        run: |
+          set -euo pipefail
+
+          TD_ARN=$(aws ecs describe-services \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --query 'services[0].taskDefinition' \
+            --output text)
+
+          echo "Current task definition: $TD_ARN"
+
+          TD_JSON=$(aws ecs describe-task-definition \
+            --task-definition "$TD_ARN" \
+            --query 'taskDefinition')
+
+          NEW_TD=$(echo "$TD_JSON" | jq --arg qk "$ECS_ENV_QUEUE_KEY" --arg qv "$QUEUE_URL" \
+                                       --arg rk "$ECS_ENV_REGION_KEY" --arg rv "$AWS_REGION" '
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+            | .containerDefinitions[0].environment =
+                (
+                  (.containerDefinitions[0].environment // [])
+                  | map(select(.name != $qk and .name != $rk))
+                  + [{"name": $qk, "value": $qv}, {"name": $rk, "value": $rv}]
+                )
+          ')
+
+          NEW_TD_ARN=$(aws ecs register-task-definition \
+            --cli-input-json "$NEW_TD" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "New task definition: $NEW_TD_ARN"
+
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --task-definition "$NEW_TD_ARN" \
+            --force-new-deployment \
+            --region "$AWS_REGION" \
+            >/dev/null
+
+      - name: Force ECS redeploy (image latest)
         run: |
           aws ecs update-service \
-            --cluster fcg-cluster \
-            --service fcg-users-task-service-57hptthy \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
             --force-new-deployment \
-            --region us-east-1
+            --region "$AWS_REGION"
