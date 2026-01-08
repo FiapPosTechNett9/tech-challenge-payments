@@ -1,0 +1,63 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BE444A43-0478-45FF-BE5D-6ECFB5DDFB88}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FIAP.CloudGames.Payments.Domain", "src\FIAP.CloudGames.Payments.Domain\FIAP.CloudGames.Payments.Domain.csproj", "{A03E94E1-7742-4DED-8423-432A0466903F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FIAP.CloudGames.Payments.Infrastructure", "src\FIAP.CloudGames.Payments.Infrastructure\FIAP.CloudGames.Payments.Infrastructure.csproj", "{4F1C707F-EA04-40BE-B06C-3B2B7DB04635}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FIAP.CloudGames.Payments.Application", "src\FIAP.CloudGames.Payments.Application\FIAP.CloudGames.Payments.Application.csproj", "{C4402FE0-29FB-49F2-88A2-8C17AEA42B8E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FIAP.CloudGames.Payments.API", "src\FIAP.CloudGames.Payments.API\FIAP.CloudGames.Payments.API.csproj", "{831896F5-EBC3-405B-A222-625D0099F830}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "serverless", "serverless", "{E2B185B1-395B-4A2F-9136-0BE5C072E016}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PaymentsProcessor.Function", "PaymentsProcessor.Function", "{B59720D1-1531-4EB6-A16E-6425FEF72FCF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E8947FC8-1078-480A-8B14-B22AB7EEB3E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymentsProcessor.Function", "serverless\PaymentsProcessor.Function\src\PaymentsProcessor.Function\PaymentsProcessor.Function.csproj", "{A4E7E522-037A-4491-BB70-24FF62A66E40}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A03E94E1-7742-4DED-8423-432A0466903F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A03E94E1-7742-4DED-8423-432A0466903F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A03E94E1-7742-4DED-8423-432A0466903F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A03E94E1-7742-4DED-8423-432A0466903F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F1C707F-EA04-40BE-B06C-3B2B7DB04635}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F1C707F-EA04-40BE-B06C-3B2B7DB04635}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F1C707F-EA04-40BE-B06C-3B2B7DB04635}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F1C707F-EA04-40BE-B06C-3B2B7DB04635}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4402FE0-29FB-49F2-88A2-8C17AEA42B8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4402FE0-29FB-49F2-88A2-8C17AEA42B8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4402FE0-29FB-49F2-88A2-8C17AEA42B8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4402FE0-29FB-49F2-88A2-8C17AEA42B8E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{831896F5-EBC3-405B-A222-625D0099F830}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{831896F5-EBC3-405B-A222-625D0099F830}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{831896F5-EBC3-405B-A222-625D0099F830}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{831896F5-EBC3-405B-A222-625D0099F830}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4E7E522-037A-4491-BB70-24FF62A66E40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4E7E522-037A-4491-BB70-24FF62A66E40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4E7E522-037A-4491-BB70-24FF62A66E40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4E7E522-037A-4491-BB70-24FF62A66E40}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A03E94E1-7742-4DED-8423-432A0466903F} = {BE444A43-0478-45FF-BE5D-6ECFB5DDFB88}
+		{4F1C707F-EA04-40BE-B06C-3B2B7DB04635} = {BE444A43-0478-45FF-BE5D-6ECFB5DDFB88}
+		{C4402FE0-29FB-49F2-88A2-8C17AEA42B8E} = {BE444A43-0478-45FF-BE5D-6ECFB5DDFB88}
+		{831896F5-EBC3-405B-A222-625D0099F830} = {BE444A43-0478-45FF-BE5D-6ECFB5DDFB88}
+		{B59720D1-1531-4EB6-A16E-6425FEF72FCF} = {E2B185B1-395B-4A2F-9136-0BE5C072E016}
+		{E8947FC8-1078-480A-8B14-B22AB7EEB3E3} = {B59720D1-1531-4EB6-A16E-6425FEF72FCF}
+		{A4E7E522-037A-4491-BB70-24FF62A66E40} = {E8947FC8-1078-480A-8B14-B22AB7EEB3E3}
+	EndGlobalSection
+EndGlobal
