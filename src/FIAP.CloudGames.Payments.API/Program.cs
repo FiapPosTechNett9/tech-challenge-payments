@@ -15,6 +15,7 @@ using FIAP.CloudGames.Payments.Domain.Interfaces.Repositories;
 using FIAP.CloudGames.Payments.Domain.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using Amazon.SQS;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -95,9 +96,23 @@ app.MapGet("/health", () => Results.Ok("OK")).AllowAnonymous();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+
+    var swaggerBasePath = builder.Configuration["SwaggerBasePath"] ?? "/payments";
+
+    app.UseSwagger(c =>
+    {
+        c.PreSerializeFilters.Add((swagger, req) =>
+        {
+            swagger.Servers = new List<OpenApiServer>
+            {
+                new OpenApiServer { Url = swaggerBasePath }
+            };
+        });
+    });
+
     app.UseSwaggerUI(c =>
     {
+        c.RoutePrefix = "swagger";
         c.SwaggerEndpoint("v1/swagger.json", "Payments API v1");
     });
 }
