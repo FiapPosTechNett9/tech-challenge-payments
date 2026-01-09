@@ -30,8 +30,5 @@ namespace FIAP.CloudGames.Payments.Domain.Entities
             Status = PaymentStatusEnum.Pending;
             CreatedAt = DateTime.UtcNow;
         }
-
-        public void Confirm() => Status = PaymentStatusEnum.Confirmed;
-        public void Fail() => Status = PaymentStatusEnum.Failed;
     }
 }

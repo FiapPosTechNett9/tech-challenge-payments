@@ -7,11 +7,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BE444A43-047
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FIAP.CloudGames.Payments.Domain", "src\FIAP.CloudGames.Payments.Domain\FIAP.CloudGames.Payments.Domain.csproj", "{A03E94E1-7742-4DED-8423-432A0466903F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FIAP.CloudGames.Payments.Infrastructure", "src\FIAP.CloudGames.Payments.Infrastructure\FIAP.CloudGames.Payments.Infrastructure.csproj", "{4F1C707F-EA04-40BE-B06C-3B2B7DB04635}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FIAP.CloudGames.Payments.Infrastructure", "src\FIAP.CloudGames.Payments.Infrastructure\FIAP.CloudGames.Payments.Infrastructure.csproj", "{4F1C707F-EA04-40BE-B06C-3B2B7DB04635}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FIAP.CloudGames.Payments.Application", "src\FIAP.CloudGames.Payments.Application\FIAP.CloudGames.Payments.Application.csproj", "{C4402FE0-29FB-49F2-88A2-8C17AEA42B8E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FIAP.CloudGames.Payments.Application", "src\FIAP.CloudGames.Payments.Application\FIAP.CloudGames.Payments.Application.csproj", "{C4402FE0-29FB-49F2-88A2-8C17AEA42B8E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FIAP.CloudGames.Payments.API", "src\FIAP.CloudGames.Payments.API\FIAP.CloudGames.Payments.API.csproj", "{831896F5-EBC3-405B-A222-625D0099F830}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FIAP.CloudGames.Payments.API", "src\FIAP.CloudGames.Payments.API\FIAP.CloudGames.Payments.API.csproj", "{831896F5-EBC3-405B-A222-625D0099F830}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "serverless", "serverless", "{E2B185B1-395B-4A2F-9136-0BE5C072E016}"
 EndProject
@@ -19,7 +19,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PaymentsProcessor.Function"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E8947FC8-1078-480A-8B14-B22AB7EEB3E3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PaymentsProcessor.Function", "serverless\PaymentsProcessor.Function\src\PaymentsProcessor.Function\PaymentsProcessor.Function.csproj", "{A4E7E522-037A-4491-BB70-24FF62A66E40}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PaymentsProcessor.Function", "serverless\PaymentsProcessor.Function\src\PaymentsProcessor.Function\PaymentsProcessor.Function.csproj", "{A4E7E522-037A-4491-BB70-24FF62A66E40}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{546559B0-CAE5-424F-BDDE-81833DF4D938}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FIAP.CloudGames.Payments.Tests", "tests\FIAP.CloudGames.Payments.Tests\FIAP.CloudGames.Payments.Tests.csproj", "{30631F28-2C0F-4DA9-8A28-BA78FC7DCAC4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,6 +51,10 @@ Global
 		{A4E7E522-037A-4491-BB70-24FF62A66E40}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4E7E522-037A-4491-BB70-24FF62A66E40}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4E7E522-037A-4491-BB70-24FF62A66E40}.Release|Any CPU.Build.0 = Release|Any CPU
+		{30631F28-2C0F-4DA9-8A28-BA78FC7DCAC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30631F28-2C0F-4DA9-8A28-BA78FC7DCAC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30631F28-2C0F-4DA9-8A28-BA78FC7DCAC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30631F28-2C0F-4DA9-8A28-BA78FC7DCAC4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,5 +67,9 @@ Global
 		{B59720D1-1531-4EB6-A16E-6425FEF72FCF} = {E2B185B1-395B-4A2F-9136-0BE5C072E016}
 		{E8947FC8-1078-480A-8B14-B22AB7EEB3E3} = {B59720D1-1531-4EB6-A16E-6425FEF72FCF}
 		{A4E7E522-037A-4491-BB70-24FF62A66E40} = {E8947FC8-1078-480A-8B14-B22AB7EEB3E3}
+		{30631F28-2C0F-4DA9-8A28-BA78FC7DCAC4} = {546559B0-CAE5-424F-BDDE-81833DF4D938}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CB7FF3D9-D7BB-4C6A-AFFE-74A9855BA61F}
 	EndGlobalSection
 EndGlobal
