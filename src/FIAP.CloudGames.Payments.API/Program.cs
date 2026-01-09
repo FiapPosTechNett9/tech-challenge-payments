@@ -1,41 +1,71 @@
+using Amazon.SQS;
+using FIAP.CloudGames.Payments.API.Extensions;
+using FIAP.CloudGames.Payments.API.Middlewares;
 using FIAP.CloudGames.Payments.Application.Interfaces;
 using FIAP.CloudGames.Payments.Application.Services;
-using FIAP.CloudGames.Payments.Infrastructure.Messaging;
-using FIAP.CloudGames.Payments.Infrastructure.Repositories;
-using FIAP.CloudGames.Payments.API.Middlewares;
+using FIAP.CloudGames.Payments.Domain.Interfaces;
+using FIAP.CloudGames.Payments.Domain.Interfaces.Repositories;
 using FIAP.CloudGames.Payments.Infrastructure.Configuration.Auth;
 using FIAP.CloudGames.Payments.Infrastructure.Context;
 using FIAP.CloudGames.Payments.Infrastructure.Logging;
+using FIAP.CloudGames.Payments.Infrastructure.Messaging;
+using FIAP.CloudGames.Payments.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using Serilog;
+using Serilog.Events;
 using System.Security.Claims;
 using System.Text;
-using FIAP.CloudGames.Payments.API.Extensions;
-using Microsoft.EntityFrameworkCore;
-using Serilog;
-using FIAP.CloudGames.Payments.Domain.Interfaces.Repositories;
-using FIAP.CloudGames.Payments.Domain.Interfaces;
-using Microsoft.IdentityModel.Tokens;
-using Amazon.SQS;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCustomSwagger();
+builder.Services.AddHttpClient();
 
 // DbContext
 builder.Services.AddDbContext<PaymentsDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Logging
-builder.Host.UseSerilog((context, services, configuration) =>
-{
-    configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext()
-        .WriteTo.Console();
-});
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("ServiceName", "PaymentsService")
+    .Enrich.WithMachineName()
+    .Enrich.WithThreadId()
+    .WriteTo.Console()
+    .WriteTo.Seq("http://localhost:5341")
+    .CreateLogger();
 
+builder.Host.UseSerilog();
+
+#region Telemetry Configuration
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracerProviderBuilder =>
+    {
+        tracerProviderBuilder
+            .AddAspNetCoreInstrumentation(options =>
+            {
+                options.RecordException = true;
+            })
+            .AddHttpClientInstrumentation()
+            .SetResourceBuilder(
+                ResourceBuilder.CreateDefault()
+                    .AddService(
+                        serviceName: "payments-service",
+                        serviceVersion: "1.0.0"))
+                    .AddOtlpExporter(options =>
+                    {
+                        options.Endpoint = new Uri("http://localhost:4317");
+                        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+                    });
+    });
+
+#endregion
 #region Application Services Configuration
 
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
@@ -84,6 +114,23 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    options.GetLevel = (httpContext, elapsed, ex) => ex != null
+        ? LogEventLevel.Error
+        : httpContext.Response.StatusCode > 499
+            ? LogEventLevel.Error
+            : LogEventLevel.Information;
+
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+        diagnosticContext.Set("RequestScheme", httpContext.Request.Scheme);
+        diagnosticContext.Set("UserAgent", httpContext.Request.Headers["User-Agent"].ToString());
+    };
+});
+
 app.UsePathBase("/payments");
 app.UseRouting();
 
@@ -102,9 +149,22 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+
 app.UseHttpsRedirection();
 app.UseSerilogRequestLogging();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.Run();
+try
+{
+    Log.Information("Starting PaymentsService application");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
